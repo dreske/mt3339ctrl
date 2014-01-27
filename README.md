@@ -1,0 +1,1 @@
+Litte tool to set baudrate and nmea update rate of the mt3339 gps receiver.
