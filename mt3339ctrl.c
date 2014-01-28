@@ -2,7 +2,7 @@
  * mt3339ctrl.c
  *
  *  Created on: 27.01.2014
- *      Author: dirk
+ *      Author: dreske
  */
 
 #include <stdio.h>
@@ -52,7 +52,7 @@ unsigned char calculateChecksum(char* action) {
 int applyAction(int packetNum, char* dataField, int argc, char* argv[]) {
 	char* device = argv[argc - 2];
 	int baudrate = atoi(argv[argc - 1]);
-
+	
 	int fd = open(device, O_RDWR | O_NOCTTY);
 	if (fd < 0) {
 		fprintf(stderr, "Error: Error opening device: %s\n", strerror(errno));
@@ -78,7 +78,7 @@ int applyAction(int packetNum, char* dataField, int argc, char* argv[]) {
 	config.c_cc[VMIN] = 1;
 	config.c_cc[VTIME] = 5;
 
-	speed_t speed = getBaudrate(baudrate);
+	int speed = getBaudrate(baudrate);
 	if (speed < 0) {
 		fprintf(stderr, "Error: Invalid baudrate: %d\n", baudrate);
 		return 1;
@@ -92,11 +92,14 @@ int applyAction(int packetNum, char* dataField, int argc, char* argv[]) {
 		return 1;
 	}
 	
+	//prepare action
 	char action[255];
-	char packet[255];
 	sprintf(action, "PMTK%d,%s", packetNum, dataField);
+	
+	//pack (preamble, checksum and <CR> <LF>)
+	char packet[255];
 	sprintf(packet, "$%s*%02x\r\n", action, calculateChecksum(action));
-
+	
 	write(fd, packet, strlen(packet));
 	close(fd);
 	return 0;
