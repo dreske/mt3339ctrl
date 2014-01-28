@@ -1,1 +1,1 @@
-Litte tool to set baudrate and nmea update rate of the mt3339 gps receiver.
+Litte tool for sending PMTK packets to mt3339 gps receivers.
