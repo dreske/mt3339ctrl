@@ -14,6 +14,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#define MAX_NMEA_PACKET_LENGTH 255
+
 static speed_t baudRates[] = {
 B0, B50, B75, B110, B134, B150, B200, B300, B600, B1200,
 B1800, B2400, B4800, B9600, B19200, B38400, B57600,
@@ -52,7 +54,7 @@ unsigned char calculateChecksum(char* action) {
 int applyAction(int packetNum, char* dataField, int argc, char* argv[]) {
 	char* device = argv[argc - 2];
 	int baudrate = atoi(argv[argc - 1]);
-	
+
 	int fd = open(device, O_RDWR | O_NOCTTY);
 	if (fd < 0) {
 		fprintf(stderr, "Error: Error opening device: %s\n", strerror(errno));
@@ -91,15 +93,16 @@ int applyAction(int packetNum, char* dataField, int argc, char* argv[]) {
 				strerror(errno));
 		return 1;
 	}
-	
+
 	//prepare action
-	char action[255];
-	sprintf(action, "PMTK%d,%s", packetNum, dataField);
-	
+	char action[MAX_NMEA_PACKET_LENGTH];
+	snprintf(action, MAX_NMEA_PACKET_LENGTH, "PMTK%d,%s", packetNum, dataField);
+
 	//pack (preamble, checksum and <CR> <LF>)
-	char packet[255];
-	sprintf(packet, "$%s*%02x\r\n", action, calculateChecksum(action));
-	
+	char packet[MAX_NMEA_PACKET_LENGTH];
+	snprintf(packet, MAX_NMEA_PACKET_LENGTH, "$%s*%02x\r\n", action,
+			calculateChecksum(action));
+
 	write(fd, packet, strlen(packet));
 	close(fd);
 	return 0;
@@ -113,7 +116,7 @@ int main(int argc, char *argv[]) {
 
 	int packetNum = atoi(argv[1]);
 	char* dataField = argv[2];
-	
+
 	return applyAction(packetNum, dataField, argc, argv);
 }
 
