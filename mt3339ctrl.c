@@ -32,10 +32,10 @@ int getBaudrate(int baudrate) {
 }
 
 void printUsage() {
-	printf("Usage: mt3339ctrl <action> <options> <device> <baudrate>\n");
-	printf("Actions:\n");
-	printf("\tsetbaudrate <baudrate>\n");
-	printf("\tsetupdaterate <interval (ms)>\n");
+	printf("Usage: mt3339ctrl <packetNum> <dataField> <device> <baudrate>\n");
+	printf("Packets:\n");
+	printf("\tSet baudrate: 251 <baudrate>\n");
+	printf("\tSet update rate: 220 <interval (ms)>\n");
 }
 
 unsigned char calculateChecksum(char* action) {
@@ -49,7 +49,7 @@ unsigned char calculateChecksum(char* action) {
 	return chk;
 }
 
-int applyAction(char* action, int argc, char* argv[]) {
+int applyAction(int packetNum, char* dataField, int argc, char* argv[]) {
 	char* device = argv[argc - 2];
 	int baudrate = atoi(argv[argc - 1]);
 
@@ -91,52 +91,26 @@ int applyAction(char* action, int argc, char* argv[]) {
 				strerror(errno));
 		return 1;
 	}
-
+	
+	char action[255];
 	char packet[255];
+	sprintf(action, "PMTK%d,%s", packetNum, dataField);
 	sprintf(packet, "$%s*%02x\r\n", action, calculateChecksum(action));
-	//printf("Packet: %s\n", packet);
 
 	write(fd, packet, strlen(packet));
 	close(fd);
 	return 0;
 }
 
-int setUpdateRate(int argc, char* argv[]) {
-	int updaterate = atoi(argv[2]);
-
-	char action[255];
-	sprintf(action, "PMTK220,%d", updaterate);
-	printf("Setting updaterate to : %d ms\n", updaterate);
-	return applyAction(action, argc, argv);
-}
-
-int setBaudRate(int argc, char* argv[]) {
-	int baudrate = atoi(argv[2]);
-	if (getBaudrate(baudrate) < 0) {
-		fprintf(stderr, "Error: Invalid baudrate: %d\n", baudrate);
-		return 1;
-	}
-
-	char action[255];
-	printf("Setting baudrate to: %d\n", baudrate);
-	sprintf(action, "PMTK251,%d", baudrate);
-	return applyAction(action, argc, argv);
-}
-
 int main(int argc, char *argv[]) {
-	if (argc < 2) {
+	if (argc < 5) {
 		printUsage();
 		return 1;
 	}
 
-	char* action = argv[1];
-	if (strcmp(action, "setbaudrate") == 0) {
-		return setBaudRate(argc, argv);
-	} else if (strcmp(action, "setupdaterate") == 0) {
-		return setUpdateRate(argc, argv);
-	} else {
-		printUsage();
-		return 1;
-	}
+	int packetNum = atoi(argv[1]);
+	char* dataField = argv[2];
+	
+	return applyAction(packetNum, dataField, argc, argv);
 }
 
